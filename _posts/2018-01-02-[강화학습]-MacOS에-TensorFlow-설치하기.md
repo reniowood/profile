@@ -79,6 +79,4 @@ print(sess.run(hello))
 ([targetDirectory]) $ python3 hello.py
 ```
 
-
-
-참조: TensorFlow 공식 문서 (https://www.tensorflow.org/install/install_mac)
+참조: TensorFlow 공식 문서 (<https://www.tensorflow.org/install/install_mac>)

@@ -14,6 +14,4 @@ pip를 이용해 설치할 때는 SSL 지원 문제로 인해 1.3버전 이상�
 # pip install virtualenv
 ```
 
-
-
-참조: virtualenv documentation (https://virtualenv.pypa.io/en/stable/installation/)
+참조: virtualenv documentation (<https://virtualenv.pypa.io/en/stable/installation/>)

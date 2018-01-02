@@ -26,7 +26,7 @@ Keras는 pip를 통해서나 소스를 직접 받아 설치할 수 있지만, �
 ([tenserFlowDirectory]) $ pip install keras
 ```
 
- ## 설치 확인하기
+## 설치 확인하기
 
 Keras의 [github repository](https://github.com/keras-team/keras) 의 examples 디렉토리를 살펴보면 여러 예제들을 확인할 수 있다. 그 중 하나인 [mnist_cnn.py](https://raw.githubusercontent.com/keras-team/keras/master/examples/mnist_cnn.py)를 다운받아 실행해보면 실제로 설치가 제대로 되었는지 확인할 수 있다.
 
@@ -34,6 +34,4 @@ Keras의 [github repository](https://github.com/keras-team/keras) 의 examples �
 ([tenserFlowDirectory]) $ python mnist_cnn.py
 ```
 
-
-
-참조: Keras Documentation (https://keras.io/#installation)
+참조: Keras Documentation (<https://keras.io/#installation>)
