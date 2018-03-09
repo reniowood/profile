@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "[강화학습] MacOS에 Keras 설치하기"
+title: "MacOS에 Keras 설치하기"
 categories: AI
 ---
 

@@ -1,4 +1,8 @@
-# [Gradle] Gradle 3.0의 dependencies 설정: api vs implementation
+---
+layout: post
+title: "Gradle 3.0의 dependencies 설정: api vs implementation"
+categories: Gradle
+---
 
 Gradle이 버전 3.0으로 판올림하면서 dependencies의 설정값 중 compile대신 api나 implementation을 쓰도록 변경되었다.
 

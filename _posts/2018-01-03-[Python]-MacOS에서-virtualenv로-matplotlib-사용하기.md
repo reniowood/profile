@@ -1,11 +1,11 @@
 ---
 layout: post
-title: "[Python] MacOS에서 virtualenv로 matplotlib 사용하기"
-categories: python
+title: "MacOS에서 virtualenv로 matplotlib 사용하기"
+categories: Python
 
 ---
 
-책 [파이썬과 케라스로 배우는 강화학습] 실습을 하다보니 MacOS에서 TensorFlow와 Keras를 virtualenv를 사용해 설치하고 matplotlib을 사용하는 예제 코드를 실행하다 생기는 문제가 있어 이를 정리해 보았다.
+[파이썬과 케라스로 배우는 강화학습] 실습을 하다보니 MacOS에서 TensorFlow와 Keras를 virtualenv를 사용해 설치하고 matplotlib을 사용하는 예제 코드를 실행하다 생기는 문제가 있어 이를 정리해 보았다.
 
 ## 문제
 
