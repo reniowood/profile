@@ -1,7 +1,6 @@
 ---
 layout: post
 title: "Spring Web MVC - 3. Annotated Controllers"
-published: false
 categories: Spring
 ---
 
@@ -299,8 +298,7 @@ public class MyConfig {
   * 사용할 뷰와 모델을 제공한다.
 * ```void```
   * ```void```나 ```null```을 반환하는 함수가 ```ServletResponse``` 인자 또는 ```OutputStream``` 인자 또는 ```@ResponseStatus``` 어노테이션을 가진다면 응답을 완전히 작성한 것으로 간주한다. 양수값인 ```ETag```나 ```lastModified``` 타임스탬프 값을 만들었을 때도 똑같이 간주한다.
-  
-  만약 둘 다 아니라면 ```void``` 반환값 타입은 응답 본문이 없는 것을 의미하거나 뷰 이름을 기본값으로 사용한다는 것을 의미한다.
+  * 만약 둘 다 아니라면 ```void``` 반환값 타입은 응답 본문이 없는 것을 의미하거나 뷰 이름을 기본값으로 사용한다는 것을 의미한다.
 * ```DeferredResult<V>```
   * 나중에 다른 스레드가 비동기적으로 설정할 반환값을 미리 반환하기 위해 사용한다.
 * ```Callable<V>```
@@ -947,6 +945,116 @@ public class FormController {
 ```
 
 ### Exceptions
+
+```@Controller```와 ```@ControllerAdvice``` 클래스는 예외 처리를 위해 ```@ExceptionHandler``` 메소드를 사용한다.
+
+```java
+@Controller
+public class SimpleController {
+
+    // ...
+
+    @ExceptionHandler
+    public ResponseEntity<String> handle(IOException ex) {
+        // ...
+    }
+}
+```
+
+```@ExceptionHandler```의 예외는 전파되는 최상위 예외(직접 던져진 ```IOException```)이거나 최상위 예외에 포장된 직접적 원인(```IOException```을 ```IllegalStateException```으로 감싼 경우)일 수 있다.
+
+위의 예제처럼 예외 처리를 하려는 대상 예외를 메소드 인자로 선언한다. 여러 예제가 동시에 메소드가 처리하려는 예외와 일치한다면 최상위 예외가 원인 예외보다 더 우선순위가 높다. ```ExceptionDepthComparator```가 던져진 예외 타입으로부터 깊이를 알아내 예외 우선순위를 정렬한다.
+
+다음 예제처럼 어노테이션에 처리할 대상 예외 타입을 더 구체적으로 나타낼 수 있다.
+
+```java
+@ExceptionHandler({FileSystemException.class, RemoteException.class})
+public ResponseEntity<String> handle(IOException ex) {
+    // ...
+}
+```
+
+다음처럼 구체적인 예외 타입을 표시하고 일반적인 인자를 사용할 수도 있다.
+
+```java
+@ExceptionHandler({FileSystemException.class, RemoteException.class})
+public ResponseEntity<String> handle(Exception ex) {
+    // ...
+}
+```
+
+보통은 대상 예외를 잘못 할당할 가능성을 줄이기 위해 인자 타입을 최대한 구체적으로 지정해주는 것이 좋다. 여러 예외가 할당될 수 있는 ```@ExceptionHandler``` 메소드를 하나의 예외만 할당되는 메소드로 분리하는 것을 검토하라.
+
+여러 ```@ControllerAdvice```가 있으면 우선순위가 높은 ```@ControllerAdvice```에 우선적인 최상위 예외를 할당하도록 권고한다. 최상위 예외가 원인 예외보다 우선시되긴 하지만, 한 컨트롤러나 ```@ControllerAdvice``` 클래스안에서만 적용된다. 결국 우선순위가 높은 ```@ControllerAdvice``` bean의 원인 예외가 낮은 우선순위의 ```@ControllerAdvice``` bean의 모든 예외보다 우선순위가 높다는 말이다.
+
+```@ExceptionHandler``` 메소드 구현이 주어진 예외 인스턴스를 원래 형태로 다시 던져서 그 예외 인스턴스를 처리하지 못하도록 할 수도 있다. 최상위 레벨의 예외만 대응하거나 정적으로 예외 처리 대상이 정해지지 않는 특정 상황에서 유용한 방법이다. 다시 던져진 예외는 한 번도 처리되지 않은 것처럼 남은 일련의 예외 처리 단계에 전파된다.
+
+Spring MVC의 ```@ExceptionHandler``` 메소드에 대한 지원은 ```DispatcherServlet``` 수준에서 이루어진다.
+
+#### Method Arguments
+
+```@ExceptionHandler```는 다음 목록에 나열된 인자를 지원한다.
+
+* Exception Type
+  * 발생한 예외에 접근한다.
+* ```HandlerMethod```
+  * 예외를 발생시킨 컨트롤러 메소드에 접근한다.
+* ```WebRequest```, ```NativeWebRequest```
+  * Servlet API를 직접 이용하지 않고도 요청 파라미터와 세션 속성값에 접근할 수 있다.
+* ```javax.servlet.ServletRequest```, ```javax.servlet.ServletResponse```
+  * 특정 요청 혹은 응답 타입을 선택한다. (예를 들어, ```ServletRequest```, ```HttpServletRequest```, Spring의 ```MultipartRequest```, ```MultipartHttpServletRequest```)
+* ```javax.servlet.http.HttpSession```
+  * 세션이 없어도 강제로 만든다. 따라서 값이 ```null``일 수가 없다.
+  * 해당 세션에 접근하는 것은 스레드 안전하지 않다. 여러 요청이 세션을 동시에 접근하게 하려면 ```RequestMappingHandlerAdapter``` 인스턴스의 ```synchronizeOnSession``` 값을 ```true```로 설정한다.
+* ```java.security.Principal```
+  * 현재 인증된 사용자 정보. 알려진 특정 ```Principal``` 구현을 사용한다.
+* ```HttpMethod```
+  * 요청의 HTTP 메소드
+* ```java.util.Locale```
+  * ```LocaleResolver```가 결정한 현재 요청의 locale
+* ```java.util.TimeZone``` + ```java.time.ZoneId```
+  * ```LocaleContextResolver```가 정한 현재 요청의 시간대
+* ```java.io.OutputStream```, ```java.io.Writer```
+  * Servlet API가 제공하는 원본 응답 본문에 접근하기 위해 사용
+* ```java.util.Map```, ```org.springframework.ui.Model```, ```org.springframework.ui.ModelMap```
+  * 에러 응답을 위한 모델에 접근한다. 항상 비어있음.
+* ```RedirectAttributes```
+  * 리다이렉트에 사용되는 속성값에 접근하기 위해 사용한다.
+* ```@SessionAttribute```
+  * 세션 속성값에 접근한다.
+* ```@RequestAttribute```
+  * 요청 속성값에 접근한다..
+
+#### Return Values
+
+```@ExceptionHandler```는 다음 목록에 나열된 반환값을 지원한다.
+
+* ```@ResponseBody```
+  * ```HttpMessageConverter``` 구현이 반환값을 변환해 응답에 쓴다.
+* ```HttpEntity<B>```, ```ResponseEntity<B>```
+* ```HttpMessageConverter``` 구현이 반환값을 변환해 응답에 쓴다.
+* ```String```
+  * ```ViewResolver``` 구현이 뷰 이름으로 해석한다. command object와 ```@ModelAttribute``` 메소드가 정한 암묵적인 모델과 함께 사용한다.
+* ```View```
+  * command object와 ```@ModelAttribute``` 메소드가 정한 암묵적인 모델과 함께 렌더링한다.
+* ```java.util.Map```, ```org.springframework.ui.Model```
+  * 반환값이 암묵적인 모델에 속성으로 추가되고, 뷰 이름은 ```RequestToViewNameTranslator```가 암묵적으로 정한다.
+* ```@ModelAttribute```
+  * 반환값이 모델에 속성으로 추가되고, 뷰 이름은 ```RequestToViewNameTranslator```가 암묵적으로 정한다.
+* ```ModelAndView``` 객체
+  * 사용할 뷰와 모델을 제공한다.
+* ```void```
+  * ```void```나 ```null```을 반환하는 함수가 ```ServletResponse``` 인자 또는 ```OutputStream``` 인자 또는 ```@ResponseStatus``` 어노테이션을 가진다면 응답을 완전히 작성한 것으로 간주한다. 양수값인 ```ETag```나 ```lastModified``` 타임스탬프 값을 만들었을 때도 똑같이 간주한다.
+  * 만약 둘 다 아니라면 ```void``` 반환값 타입은 응답 본문이 없는 것을 의미하거나 뷰 이름을 기본값으로 사용한다는 것을 의미한다.
+* 다른 반환값
+* 다른 타입의 반환값
+  * 반환값 타입이 위에 설명한 값이 아니고 ```BeanUtils#isSimpleProperty```가 판단하기에 단순한 타입이 아니면 모델에 추가되는 모델 속성값으로 간주된다. 단순한 타입이 아니면 해결되지 않는다.
+
+#### REST API exceptions
+
+REST 서비스의 흔한 요구사항은 응답 본문에 에러에 대한 자세한 정보를 담는 것이다. 에러에 대한 자세한 정보를 어떻게 표현할지는 어플리케이션마다 다르므로 Spring 프레임워크가 자동으로 해주지는 않는다. 다만 ```@RestController```에 ```ResponseEntity```를 반환하는 ```@ExceptionHandler``` 메소드를 사용하면 응답 상태와 본문을 설정할 수 있다. ```@ControllerAdvice``` 클래스에 해당 메소드를 추가하면 전역으로 적용 가능하다.
+
+예외에 대한 자세한 정보를 응답 본문에 담는 전역 예외 처리를 사용하는 어플리케이션은 ```ResponseEntityExceptionHandler```를 상속받는 것을 고려해야 한다. 이 클래스는 Spring MVC가 던지는 예외를 처리하는 방법과 응답 본문을 설정할 수 있는 방법을 제공한다. 이 클래스를 사용하려면 ```ResponseEntityExceptionHandler```를 상속받아 ```@ControllerAdvice```를 추가하고 필요한 메소드를 구현한 뒤, Spring bean으로 선언하면 된다.
 
 ### Controller Advice
 
