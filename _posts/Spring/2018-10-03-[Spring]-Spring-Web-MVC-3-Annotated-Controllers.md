@@ -860,10 +860,10 @@ public class UserController extends AbstractController {
 
 ### Model
 
-```@ModelAttribute```를
+```@ModelAttribute```를 이용해
 
 * ```@RequestMapping``` 메소드의 인자에 추가해 모델의 객체를 생성하거나 객체에 접근하고 ```WebDataBinder```를 이용해 요청에 연결할 수 있다.
-* ```@Controller```나 ```@ControllerAdvice``` 클래스의 메소드에 추가해 ```@Requestmapping``` 메소드 어노테이션 이전에 모델을 초기화하도록 도와준다.
+* ```@Controller```나 ```@ControllerAdvice``` 클래스의 메소드에 추가해 ```@RequestMapping``` 메소드 어노테이션 이전에 모델을 초기화하도록 도와준다.
 * ```@RequestMapping``` 메소드에 추가해 해당 메소드의 반환값이 모델 속성값임을 표시한다.
 
 이번 절에서는 두 번째 사용법인 ```@ModelAttribute``` 메소드에 대해 이야기한다. 컨트롤러는 ```@ModelAttribute``` 메소드를 몇개든 가질 수 있다. 모든 ```@ModelAttribute``` 메소드는 ```@ControllerAdvice```를 통해 컨트롤러 간에도 공유할 수 있다.
