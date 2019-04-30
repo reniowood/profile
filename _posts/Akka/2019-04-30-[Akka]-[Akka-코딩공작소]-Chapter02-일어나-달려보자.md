@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "[Akka 코딩공작소] Chatper 2. 일어나 달려보자"
-categories: Kafka
+categories: Akka
 ---
 
 ## 복제, 빌드, 인터페이스 테스트
