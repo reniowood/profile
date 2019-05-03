@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "[Akka 코딩공작소] Chatper 1. 아카 소개"
-categories: Kafka
+categories: Akka
 ---
 
 ## 아카란 무엇인가
