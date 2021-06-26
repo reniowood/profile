@@ -4,6 +4,8 @@ title: "BOJ 3938 - Concert Hall Scheduling"
 categories: Algorithm
 ---
 
+최종 수정일: 2021-06-26
+
 [문제 링크](https://www.acmicpc.net/problem/3938)
 
 1년 365일 두 개의 콘서트 홀을 운영하면서 예약 요청 일정과 금액이 주어졌을 때 얻을 수 있는 가장 큰 금액을 묻는 문제이다. 언뜻 보았을 때는 각 예약과 일정을 이분 그래프로 나타낸 후 최소 비용 최대 유량 알고리즘을 사용하면 될 것으로 생각했다. 네트워크 유량 문제가 다 그렇지만 이 문제도 그래프 모델링이 매우 중요하다.
@@ -22,33 +24,59 @@ categories: Algorithm
 
 <img src="/img/algorithm/boj3938/example-network.png" width="500px">
 
-한 번에 최대 두 개의 콘서트 홀에 예약이 가능하므로 1일부터 365일까지 차례대로 용량이 2인 간선으로 연결한다. 그리고 각 예약마다 시작일 정점에서 종료일 다음 날 정점까지 연결하는 용량 1, 비용이 요금에 -1을 곱한 값인 간선을 추가한다. 종료일 정점으로 연결하게 되면 시작일과 종료일이 같은 예약이나 한 예약의 종료일과 다른 예약의 시작일이 같은 것을 처리할 수 없다. 최대 비용을 구해야 하므로 비용도 요금에 -1을 곱한 값을 사용한다. 이 때 365일 정점 다음 정점을 추가해야 한다.
+한 번에 최대 두 개의 콘서트 홀에 예약이 가능하므로 1일부터 365일까지 차례대로 용량이 2인 간선으로 연결한다. 그리고 각 예약마다 시작일 정점에서 종료일 다음 날 정점까지 연결하는 용량 1, 비용이 요금에 -1을 곱한 값인 간선을 추가한다. 종료일 정점으로 연결하게 되면 시작일과 종료일이 같은 예약이나 한 예약의 종료일과 다른 예약의 시작일이 같은 것을 처리할 수 없다. 따라서 366일에 대응되는 정점도 추가해야 하며, 끝 정점은 366일 다음 정점이 된다. 최대 비용을 구해야 하므로 비용도 요금에 -1을 곱한 값을 사용한다.
 
-위 네트워크에 최소 비용 최대 유량 알고리즘을 적용한 소스코드는 다음과 같다. 최대 비용을 구해야 하므로 최소 비용을 구한 결과에 -1을 곱해주어야 하는 것을 잊지 말아야 한다.
+위 네트워크에 최소 비용 최대 유량 알고리즘을 적용한 소스코드는 다음과 같다. 같은 기간에 대한 예약이 여러 번 들어올 수 있으므로 행렬을 이용한 그래프가 아닌 인접 간선을 이용한 그래프를 만들어야 한다. 또한 최대 비용을 구해야 하므로 최소 비용을 구한 결과에 -1을 곱해주어야 하는 것을 잊지 말아야 한다.
 ```java
 import java.io.*;
 import java.util.*;
 
 public class Main {
     private static final int NUM_DAYS = 365;
-    private static final int SOURCE = 0, SINK = NUM_DAYS;
+    private static final int SOURCE = 0, SINK = NUM_DAYS + 1;
 
-    private static void createNetwork(int n, int[][] applications, int[][] network, int[][] costs) {
-        for (int i = 0; i < NUM_DAYS; ++i) {
-            network[i][i + 1] = 2;
+    private static class Edge {
+        int from, to, capacity, cost;
+        Edge reverse;
+
+        public Edge(int from, int to, int capacity, int cost) {
+            this.from = from;
+            this.to = to;
+            this.capacity = capacity;
+            this.cost = cost;
+        }
+    }
+
+    private static void addEdge(Map<Integer, List<Edge>> network, Edge edge) {
+        List<Edge> edges = network.getOrDefault(edge.from, new ArrayList<>());
+        edges.add(edge);
+        network.put(edge.from, edges);
+    }
+
+    private static void createNetwork(int n, int[][] applications, Map<Integer, List<Edge>> network) {
+        for (int i = 0; i < NUM_DAYS + 1; ++i) {
+            Edge edge = new Edge(i, i + 1, 2, 0);
+            Edge reverse = new Edge(i + 1, i, 0, 0);
+            edge.reverse = reverse;
+            reverse.reverse = edge;
+            addEdge(network, edge);
+            addEdge(network, reverse);
         }
 
         for (int i = 0; i < n; ++i) {
             int[] application = applications[i];
 
-            network[application[0]][application[1] + 1] = 1;
-            costs[application[0]][application[1] + 1] = -application[2];
-            costs[application[1] + 1][application[0]] = application[2];
+            Edge edge = new Edge(application[0], application[1] + 1, 1, -application[2]);
+            Edge reverse = new Edge(application[1] + 1, application[0], 0, application[2]);
+            edge.reverse = reverse;
+            reverse.reverse = edge;
+            addEdge(network, edge);
+            addEdge(network, reverse);
         }
     }
 
-    private static Integer[] findMinCostPath(int networkSize, int[][] network, int[][] costs) {
-        Integer[] parents = new Integer[networkSize];
+    private static List<Edge> findMinCostPath(int networkSize, Map<Integer, List<Edge>> network) {
+        Edge[] parents = new Edge[networkSize];
         Queue<Integer> queue = new LinkedList<>();
         boolean[] isInQueue = new boolean[networkSize];
         int[] distances = new int[networkSize];
@@ -62,55 +90,62 @@ public class Main {
             int curr = queue.poll();
             isInQueue[curr] = false;
 
-            for (int next = 0; next < networkSize; ++next) {
-                if (network[curr][next] > 0 && distances[curr] + costs[curr][next] < distances[next]) {
-                    distances[next] = distances[curr] + costs[curr][next];
-                    parents[next] = curr;
+            if (network.containsKey(curr)) {
+                for (Edge edge : network.get(curr)) {
+                    int next = edge.to;
+                    if (edge.capacity > 0 && distances[curr] + edge.cost < distances[next]) {
+                        distances[next] = distances[curr] + edge.cost;
+                        parents[next] = edge;
 
-                    if (!isInQueue[next]) {
-                        queue.offer(next);
-                        isInQueue[next] = true;
+                        if (!isInQueue[next]) {
+                            queue.offer(next);
+                            isInQueue[next] = true;
+                        }
                     }
                 }
             }
         }
 
-        return parents;
+        List<Edge> edges = new ArrayList<>();
+        for (int node = SINK; parents[node] != null; node = parents[node].from) {
+            edges.add(parents[node]);
+        }
+
+        return edges;
     }
 
-    private static int findMinCostMaxFlow(int networkSize, int[][] network, int[][] costs) {
-        int minCost = 0;
+    private static long findMinCostMaxFlow(int networkSize, Map<Integer, List<Edge>> network) {
+        long minCost = 0;
 
         while (true) {
-            Integer[] parents = findMinCostPath(networkSize, network, costs);
+            List<Edge> edges = findMinCostPath(networkSize, network);
 
-            if (parents[SINK] == null) {
+            if (edges.isEmpty()) {
                 break;
             }
 
-            int flow = Integer.MAX_VALUE;
-            for (int node = SINK; parents[node] != null; node = parents[node]) {
-                flow = Math.min(flow, network[parents[node]][node]);
+            long flow = Long.MAX_VALUE;
+            for (Edge edge : edges) {
+                flow = Math.min(flow, edge.capacity);
             }
 
-            for (int node = SINK; parents[node] != null; node = parents[node]) {
-                minCost += flow * costs[parents[node]][node];
-                network[parents[node]][node] -= flow;
-                network[node][parents[node]] += flow;
+            for (Edge edge : edges) {
+                minCost += flow * edge.cost;
+                edge.capacity -= flow;
+                edge.reverse.capacity += flow;
             }
         }
 
         return minCost;
     }
 
-    private static int solve(int n, int[][] applications) {
-        int networkSize = NUM_DAYS + 1;
-        int[][] network = new int[networkSize][networkSize];
-        int[][] costs = new int[networkSize][networkSize];
+    private static long solve(int n, int[][] applications) {
+        int networkSize = NUM_DAYS + 2;
+        Map<Integer, List<Edge>> network = new HashMap<>();
 
-        createNetwork(n, applications, network, costs);
+        createNetwork(n, applications, network);
 
-        return -findMinCostMaxFlow(networkSize, network, costs);
+        return -findMinCostMaxFlow(networkSize, network);
     }
 
     public static void main(String[] args) throws IOException {
@@ -140,3 +175,12 @@ public class Main {
     }
 }
 ```
+
+---
+
+2021-06-26 추가: 해당 문제 제출 답안이 데이터 추가 이후 틀린 것으로 확인되어, 제대로 풀지 못하던 경우인
+
+1. 시작일과 종료일이 같은 예약이 두 개 이상 있을 경우
+1. 1일부터 365일까지의 예약이 두 개 이상 있을 경우
+
+를 대응하기 위해 설명을 수정했습니다.
